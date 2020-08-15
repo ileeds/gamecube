@@ -35,26 +35,29 @@ const ButtonText = styled.span`
   vertical-align: middle;
 `;
 
+const defaultState = {
+  players: null,
+  myPlayer: null,
+  responseToPost: '',
+  pressed: {
+    a: false,
+    b: false,
+    arrowup: false,
+    arrowdown: false,
+    arrowleft: false,
+    arrowright: false,
+  },
+};
+
 class App extends Component {
-  state = {
-    players: null,
-    myPlayer: null,
-    responseToPost: '',
-    pressed: {
-      a: false,
-      b: false,
-      arrowup: false,
-      arrowdown: false,
-      arrowleft: false,
-      arrowright: false,
-    },
-  };
+  state = defaultState;
   
   componentDidMount() {
     this.getPlayers().then(res => this.setState({ players: res.players }))
     document.addEventListener("keydown", this.handleKeyDown);
     document.addEventListener("keyup", this.handleKeyUp);
-  }
+    window.addEventListener('beforeunload', this.handleLeave);
+  };
 
   getPlayers = async () => {
     const response = await fetch('/api/players');
@@ -117,6 +120,22 @@ class App extends Component {
     }
   };
 
+  handleLeave = async e => {
+    if (this.state.myPlayer) {
+      await fetch('/api/leave', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          player: this.state.myPlayer,
+        }),
+      });
+      this.setState(defaultState);
+      this.getPlayers().then(res => this.setState({ players: res.players }))
+    }
+  }
+
   selectPlayer = async key => {
     const response = await fetch('/api/register', {
       method: 'POST',
@@ -139,13 +158,18 @@ class App extends Component {
 
   renderBody() {
     if (this.state.myPlayer) {
-      return map(this.state.pressed, (val, key) => {
-        return (
-          <GameButton key={key} pressed={val}>
-            <ButtonText>{capitalize(key.replace(/arrow/g, ''))}</ButtonText>
-          </GameButton>
-        );
-      });
+      return (
+        <>
+          <button onClick={this.handleLeave}>EXIT</button>
+          {map(this.state.pressed, (val, key) => {
+            return (
+              <GameButton key={key} pressed={val}>
+                <ButtonText>{capitalize(key.replace(/arrow/g, ''))}</ButtonText>
+              </GameButton>
+            );
+          })}
+        </>
+      );
     } else {
       return map(this.state.players, (val, key) => {
         return (

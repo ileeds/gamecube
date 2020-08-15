@@ -38,7 +38,13 @@ app.post('/api/register', (req, res) => {
     success = true;
   }
   res.send({ players, success });
-})
+});
+
+app.post('/api/leave', (req, res) => {
+  const { player } = req.body;
+  players[player] = false;
+  res.send({ players });
+});
 
 app.post('/api/input', (req, res) => {
   const { key, press, player } =  req.body;
