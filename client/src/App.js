@@ -174,7 +174,7 @@ class App extends Component {
       return map(this.state.players, (val, key) => {
         return (
           <PlayerBlock key={key} selected={val} onClick={() => this.selectPlayer(key)}>
-            <ButtonText>{`Player ${key}`}</ButtonText>
+            <ButtonText>{`Player ${parseInt(key) + 1}`}</ButtonText>
           </PlayerBlock>
         );
       });
