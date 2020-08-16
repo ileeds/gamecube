@@ -89,6 +89,11 @@ app.post('/api/input', (req, res) => {
         }
         stick.x = 0.5;
         return getStickAction();
+      case 'enter':
+        if (p) {
+          return 'PRESS START';
+        }
+        return 'RELEASE START';
       default:
         return null;
     }

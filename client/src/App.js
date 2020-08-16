@@ -5,23 +5,36 @@ import { capitalize, lowerCase, map, omitBy } from 'lodash';
 import logo from './logo.svg';
 import './App.css';
 
+const roomSrc = 'https://www.webrtc-experiment.com/screen/?s=wa41olr6o4';
+
 const Container = styled.div`
   height: 100%;
+`;
+
+const Stream = styled.iframe`
+  flex: 0 0 100%;
+`;
+
+const ButtonContainer = styled.div`
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
 `;
 
 const GameContainer = styled.div`
   margin: 20px;
   display: flex;
+  flex-wrap: wrap;
   justify-content: space-between;
 `;
 
 const GameButton = styled.div`
-  z-index: 2;
   border-radius: 100%;
   text-align: center;
   line-height: 80px;
   width: 80px;
   height: 80px;
+  margin: auto;
   background-color: ${({ pressed, toAssign }) => {
     if (toAssign) {
       return 'blue';
@@ -33,19 +46,34 @@ const GameButton = styled.div`
   }};
 `;
 
+const ExitButton = styled.button`
+  border-radius: 100%;
+  text-align: center;
+  line-height: 80px;
+  width: 80px;
+  height: 80px;
+  color: white;
+  background-color: red;
+  font-weight: bold;
+`;
+
 const PlayerBlock = styled.div`
   border-radius: 100%;
   text-align: center;
   line-height: 80px;
   width: 80px;
   height: 80px;
-  background-color: ${({ selected }) => selected ? "gray" : "green" };
+  color: white;
+  background-color: ${({ selected }) => selected ? 'gray' : 'green'};
 `;
 
 const ButtonText = styled.span`
   line-height: normal;
+  color: white;
   display: inline-block;
   vertical-align: middle;
+  font-weight: bold;
+  margin: auto;
 `;
 
 const defaultState = {
@@ -59,6 +87,7 @@ const defaultState = {
     arrowdown: false,
     arrowleft: false,
     arrowright: false,
+    enter: false,
   },
   keyMappings: {
     a: 'a',
@@ -67,33 +96,38 @@ const defaultState = {
     arrowdown: 'arrowdown',
     arrowleft: 'arrowleft',
     arrowright: 'arrowright',
+    enter: 'enter'
   },
   toAssign: null,
 };
 
 class App extends Component {
   state = defaultState;
-  
+
   componentDidMount() {
-    this.getPlayers().then(res => this.setState({ players: res.players }))
-    document.addEventListener("keydown", this.handleKeyDown);
-    document.addEventListener("keyup", this.handleKeyUp);
+    this.getPlayers().then(res => this.setState({ players: res.players }));
+    document.addEventListener('keydown', this.handleKeyDown);
+    document.addEventListener('keyup', this.handleKeyUp);
     window.addEventListener('beforeunload', this.handleLeave);
-  };
+  }
 
   getPlayers = async () => {
     const response = await fetch('/api/players');
     const body = await response.json();
     if (response.status !== 200) throw Error(body.message);
-    
+
     return body;
   };
 
   handleKeyDown = async e => {
+    if([32, 37, 38, 39, 40].indexOf(e.keyCode) > -1) {
+      e.preventDefault();
+    }
+    
     const key = lowerCase(e.key).replace(/\s/g, '');
 
     if (this.state.toAssign && !(key in this.state.keyMappings)) {
-      const newKeyMappings= omitBy(this.state.keyMappings, (val) => {
+      const newKeyMappings = omitBy(this.state.keyMappings, val => {
         return val === this.state.toAssign;
       });
       this.setState({
@@ -105,16 +139,18 @@ class App extends Component {
       });
       return;
     }
-    
+
     if (key in this.state.keyMappings) {
       const triggered = this.state.keyMappings[key];
 
       if (!this.state.pressed[triggered]) {
-        this.setState({ pressed: {
-          ...this.state.pressed,
-          [triggered]: true,
-        }});
-    
+        this.setState({
+          pressed: {
+            ...this.state.pressed,
+            [triggered]: true,
+          }
+        });
+
         const response = await fetch('/api/input', {
           method: 'POST',
           headers: {
@@ -124,10 +160,10 @@ class App extends Component {
             key: triggered,
             press: true,
             player: this.state.myPlayer,
-          }),
+          })
         });
         const body = await response.text();
-        
+
         this.setState({ responseToPost: body });
       }
     }
@@ -139,11 +175,13 @@ class App extends Component {
     if (key in this.state.keyMappings) {
       const triggered = this.state.keyMappings[key];
 
-      this.setState({ pressed: {
-        ...this.state.pressed,
-        [triggered]: false,
-      }});
-  
+      this.setState({
+        pressed: {
+          ...this.state.pressed,
+          [triggered]: false,
+        }
+      });
+
       const response = await fetch('/api/input', {
         method: 'POST',
         headers: {
@@ -153,10 +191,10 @@ class App extends Component {
           key: triggered,
           press: false,
           player: this.state.myPlayer,
-        }),
+        })
       });
       const body = await response.text();
-      
+
       this.setState({ responseToPost: body });
     }
   };
@@ -170,12 +208,12 @@ class App extends Component {
         },
         body: JSON.stringify({
           player: this.state.myPlayer,
-        }),
+        })
       });
       this.setState({ ...defaultState });
-      this.getPlayers().then(res => this.setState({ players: res.players }))
+      this.getPlayers().then(res => this.setState({ players: res.players }));
     }
-  }
+  };
 
   selectPlayer = async key => {
     const response = await fetch('/api/register', {
@@ -185,7 +223,7 @@ class App extends Component {
       },
       body: JSON.stringify({
         player: key,
-      }),
+      })
     });
     const body = await response.json();
 
@@ -194,20 +232,20 @@ class App extends Component {
     }
 
     this.setState({ players: body.players });
-  }
+  };
 
   handleReassign = (e, key) => {
     e.stopPropagation();
     this.setState({ toAssign: this.state.keyMappings[key] });
-  }
+  };
 
   clearReassign = () => {
     this.setState({ toAssign: null });
-  }
+  };
 
   getCleanName = text => {
     return capitalize(text.replace(/arrow/g, ''));
-  }
+  };
 
   getButtonText = key => {
     const reassigned = this.state.keyMappings[key];
@@ -216,38 +254,51 @@ class App extends Component {
       return `${this.getCleanName(reassigned)} (${keyName})`;
     }
     return keyName;
-  }
+  };
 
   renderBody() {
     if (this.state.myPlayer) {
       return (
         <>
-          <button onClick={this.handleLeave}>EXIT</button>
-          {map(this.state.keyMappings, (val, key) => {
-            return (
-              <GameButton
-                key={key}
-                pressed={this.state.pressed[val]}
-                toAssign={val === this.state.toAssign}
-                onClick={(e) => this.handleReassign(e, key)}
-              >
-                <ButtonText>{this.getButtonText(key)}</ButtonText>
-              </GameButton>
-            );
-          })}
+          <Stream
+            width="100%"
+            height="525"
+            src={roomSrc}
+            frameborder="0"
+            allowfullscreen
+          />
+          <ButtonContainer>
+            <ExitButton onClick={this.handleLeave}>EXIT</ExitButton>
+            {map(this.state.keyMappings, (val, key) => {
+              return (
+                <GameButton
+                  key={key}
+                  pressed={this.state.pressed[val]}
+                  toAssign={val === this.state.toAssign}
+                  onClick={e => this.handleReassign(e, key)}
+                >
+                  <ButtonText>{this.getButtonText(key)}</ButtonText>
+                </GameButton>
+              );
+            })}
+          </ButtonContainer>
         </>
       );
     } else {
       return map(this.state.players, (val, key) => {
         return (
-          <PlayerBlock key={key} selected={val} onClick={() => this.selectPlayer(key)}>
+          <PlayerBlock
+            key={key}
+            selected={val}
+            onClick={() => this.selectPlayer(key)}
+          >
             <ButtonText>{`Player ${parseInt(key) + 1}`}</ButtonText>
           </PlayerBlock>
         );
       });
     }
   }
-  
+
   render() {
     console.log(this.state);
 
@@ -260,9 +311,7 @@ class App extends Component {
         <header className="App-header">
           <img src={logo} className="App-logo" alt="logo" />
         </header>
-        <GameContainer>
-          {this.renderBody()}
-        </GameContainer>
+        <GameContainer>{this.renderBody()}</GameContainer>
       </Container>
     );
   }
