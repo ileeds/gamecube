@@ -1,14 +1,21 @@
 import React, { Component } from 'react';
 import styled from 'styled-components'
+import Gamepad from 'react-gamepad'
 import { capitalize, lowerCase, map, omitBy } from 'lodash';
 
 import logo from './logo.svg';
 import './App.css';
 
-const roomSrc = 'https://www.webrtc-experiment.com/screen/?s=f4cwo9lmowp';
+const roomSrc = 'https://www.webrtc-experiment.com/screen/?s=20cdx7x0ati';
 
 const Container = styled.div`
   height: 100%;
+`;
+
+const GamepadText = styled.div`
+  flex: 0 0 100%;
+  margin-top: 20px;
+  font-weight: bold;
 `;
 
 const Stream = styled.iframe`
@@ -109,6 +116,7 @@ const defaultState = {
     enter: 'enter'
   },
   toAssign: null,
+  gamepad: false,
 };
 
 class App extends Component {
@@ -116,8 +124,10 @@ class App extends Component {
 
   componentDidMount() {
     this.getPlayers().then(res => this.setState({ players: res.players }));
+
     document.addEventListener('keydown', this.handleKeyDown);
     document.addEventListener('keyup', this.handleKeyUp);
+
     window.addEventListener('beforeunload', this.handleLeave);
   }
 
@@ -129,13 +139,68 @@ class App extends Component {
     return body;
   };
 
-  handleKeyDown = async e => {
-    if([32, 37, 38, 39, 40].indexOf(e.keyCode) > -1) {
-      e.preventDefault();
+  connectHandler = () => {
+    this.setState({ gamepad: true });
+  }
+ 
+  disconnectHandler = () => {
+    this.setState({ gamepad: false });
+  }
+ 
+  buttonChangeHandler = async (buttonName, down) => {
+    const key = (name => {
+      switch(name) {
+        case 'B':
+          return 'a';
+        case 'X':
+          return 'b';
+        case 'A':
+          return 'x';
+        case 'RB':
+          return 'r';
+        case 'LB':
+          return 'l';
+        case 'Start':
+          return 'enter';
+        case 'RT':
+          return 'z';
+        default:
+          return name;
+      }
+    })(buttonName);
+    if (down) {
+      await this.onKeyDown(key);
+    } else {
+      await this.onKeyUp(key);
     }
-    
-    const key = lowerCase(e.key).replace(/\s/g, '');
+  }
+ 
+  axisChangeHandler = async (axisName, value, previousValue) => {
+    const key = ((name, val, prev) => {
+      switch(name) {
+        case 'LeftStickX':
+          if (val > 0) {
+            return 'arrowright';
+          } else if (val < 0) {
+            return 'arrowleft';
+          }
+          return prev > 0 ? 'arrowright' : 'arrowleft';
+        case 'LeftStickY':
+          if (val > 0) {
+            return 'arrowup';
+          } else if (val < 0) {
+            return 'arrowdown';
+          }
+          return prev > 0 ? 'arrowup' : 'arrowdown';
+        default:
+          return name;
+      }
+    })(axisName, value, previousValue);
+    value === 0 ? await this.onKeyUp(key) : await this.onKeyDown(key, value);
+  }
 
+  onKeyDown = async (keyInput, axisValue = null) => {
+    const key = lowerCase(keyInput).replace(/\s/g, '');
     if (this.state.toAssign && !(key in this.state.keyMappings)) {
       const newKeyMappings = omitBy(this.state.keyMappings, val => {
         return val === this.state.toAssign;
@@ -170,6 +235,7 @@ class App extends Component {
             key: triggered,
             press: true,
             player: this.state.myPlayer,
+            axisValue: axisValue,
           })
         });
         const body = await response.text();
@@ -177,11 +243,10 @@ class App extends Component {
         this.setState({ responseToPost: body });
       }
     }
-  };
+  }
 
-  handleKeyUp = async e => {
-    const key = lowerCase(e.key).replace(/\s/g, '');
-
+  onKeyUp = async (keyInput) => {
+    const key = lowerCase(keyInput).replace(/\s/g, '');
     if (key in this.state.keyMappings) {
       const triggered = this.state.keyMappings[key];
 
@@ -207,6 +272,18 @@ class App extends Component {
 
       this.setState({ responseToPost: body });
     }
+  }
+
+  handleKeyDown = async e => {
+    if([32, 37, 38, 39, 40].indexOf(e.keyCode) > -1) {
+      e.preventDefault();
+    }
+    
+    await this.onKeyDown(e.key);
+  };
+
+  handleKeyUp = async e => {
+    await this.onKeyUp(e.key);
   };
 
   handleLeave = async e => {
@@ -321,7 +398,19 @@ class App extends Component {
         <header className="App-header">
           <img src={logo} className="App-logo" alt="logo" />
         </header>
-        <GameContainer>{this.renderBody()}</GameContainer>
+        <Gamepad
+          onConnect={this.connectHandler}
+          onDisconnect={this.disconnectHandler}
+          onButtonChange={this.buttonChangeHandler}
+          onAxisChange={this.axisChangeHandler}
+          stickThreshold={0.5}
+        >
+          <></>
+        </Gamepad>
+        <GameContainer>
+          {this.renderBody()}
+          {this.state.gamepad && <GamepadText>Gamepad Detected</GamepadText>}
+        </GameContainer>
       </Container>
     );
   }

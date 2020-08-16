@@ -53,9 +53,9 @@ app.post('/api/leave', (req, res) => {
 });
 
 app.post('/api/input', (req, res) => {
-  const { key, press, player } =  req.body;
+  const { key, press, player, axisValue } =  req.body;
 
-  const action = ((k, pr, stick) => {
+  const action = ((k, pr, stick, val) => {
     switch(k) {
       case 'a':
         if (pr) {
@@ -69,28 +69,28 @@ app.post('/api/input', (req, res) => {
         return 'RELEASE B';
       case 'arrowup':
         if (pr) {
-          stick.y = 0;
+          stick.y = val ? 0.5 - val : 0;
           return getStickAction(stick);
         }
         stick.y = 0.5;
         return getStickAction(stick);
       case 'arrowdown':
         if (pr) {
-          stick.y = 1;
+          stick.y = val ? 0.5 - val : 1;
           return getStickAction(stick);
         }
         stick.y = 0.5;
         return getStickAction(stick);
       case 'arrowleft':
         if (pr) {
-          stick.x = 0;
+          stick.x = val ? 0.5 + val : 0;
           return getStickAction(stick);
         }
         stick.x = 0.5;
         return getStickAction(stick);
       case 'arrowright':
         if (pr) {
-          stick.x = 1;
+          stick.x = val ? 0.5 + val : 1;
           return getStickAction(stick);
         }
         stick.x = 0.5;
@@ -118,7 +118,7 @@ app.post('/api/input', (req, res) => {
       default:
         return null;
     }
-  })(key, press, playerSticks[player]);
+  })(key, press, playerSticks[player], axisValue);
 
   if (action) {
     exec(`echo '${action}' > ${path}${player}`, (error, stdout, stderr) => {

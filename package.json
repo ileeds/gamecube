@@ -11,6 +11,7 @@
     "express": "^4.16.4",
     "kbm-robot": "0.0.4",
     "lodash": "^4.17.20",
+    "react-gamepad": "^1.0.3",
     "robotjs": "^0.6.0",
     "styled-components": "^5.1.1"
   },
