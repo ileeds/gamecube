@@ -1,6 +1,6 @@
 import React, { Component } from 'react';
 import styled from 'styled-components'
-import { capitalize, lowerCase, map, omit } from 'lodash';
+import { capitalize, lowerCase, map, omitBy } from 'lodash';
 
 import logo from './logo.svg';
 import './App.css';
@@ -93,7 +93,9 @@ class App extends Component {
     const key = lowerCase(e.key).replace(/\s/g, '');
 
     if (this.state.toAssign && !(key in this.state.keyMappings)) {
-      const newKeyMappings= omit(this.state.keyMappings, this.state.toAssign);
+      const newKeyMappings= omitBy(this.state.keyMappings, (val) => {
+        return val === this.state.toAssign;
+      });
       this.setState({
         keyMappings: {
           ...newKeyMappings,
@@ -196,7 +198,7 @@ class App extends Component {
 
   handleReassign = (e, key) => {
     e.stopPropagation();
-    this.setState({ toAssign: key });
+    this.setState({ toAssign: this.state.keyMappings[key] });
   }
 
   clearReassign = () => {
@@ -226,7 +228,7 @@ class App extends Component {
               <GameButton
                 key={key}
                 pressed={this.state.pressed[val]}
-                toAssign={key === this.state.toAssign}
+                toAssign={val === this.state.toAssign}
                 onClick={(e) => this.handleReassign(e, key)}
               >
                 <ButtonText>{this.getButtonText(key)}</ButtonText>
