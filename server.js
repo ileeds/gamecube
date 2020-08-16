@@ -20,7 +20,13 @@ const stick = {
   y: 0.5,
 }
 
-const getStickAction = () => {
+const playerSticks = {
+  1: { ...stick },
+  2: { ...stick },
+  3: { ...stick },
+}
+
+const getStickAction = (stick) => {
   return `SET MAIN ${stick.x} ${stick.y}`;
 }
 
@@ -49,55 +55,70 @@ app.post('/api/leave', (req, res) => {
 app.post('/api/input', (req, res) => {
   const { key, press, player } =  req.body;
 
-  const action = ((k, p) => {
+  const action = ((k, pr, stick) => {
     switch(k) {
       case 'a':
-        if (p) {
+        if (pr) {
           return 'PRESS A';
         }
         return 'RELEASE A';
       case 'b':
-        if (p) {
+        if (pr) {
           return 'PRESS B';
         }
         return 'RELEASE B';
       case 'arrowup':
-        if (p) {
+        if (pr) {
           stick.y = 0;
-          return getStickAction();
+          return getStickAction(stick);
         }
         stick.y = 0.5;
-        return getStickAction();
+        return getStickAction(stick);
       case 'arrowdown':
-        if (p) {
+        if (pr) {
           stick.y = 1;
-          return getStickAction();
+          return getStickAction(stick);
         }
         stick.y = 0.5;
-        return getStickAction();
+        return getStickAction(stick);
       case 'arrowleft':
-        if (p) {
+        if (pr) {
           stick.x = 0;
-          return getStickAction();
+          return getStickAction(stick);
         }
         stick.x = 0.5;
-        return getStickAction();
+        return getStickAction(stick);
       case 'arrowright':
-        if (p) {
+        if (pr) {
           stick.x = 1;
-          return getStickAction();
+          return getStickAction(stick);
         }
         stick.x = 0.5;
-        return getStickAction();
+        return getStickAction(stick);
       case 'enter':
-        if (p) {
+        if (pr) {
           return 'PRESS START';
         }
         return 'RELEASE START';
+      case 'z':
+        if (pr) {
+          return 'PRESS Z';
+        }
+        return 'RELEASE Z';
+      case 'l':
+        if (pr) {
+          return 'PRESS L';
+        }
+        return 'RELEASE L';
+      case 'r':
+        if (pr) {
+          return 'PRESS R';
+        }
+        return 'RELEASE R';
       default:
         return null;
     }
-  })(key, press);
+  })(key, press, playerSticks[player]);
 
   if (action) {
     exec(`echo '${action}' > ${path}${player}`, (error, stdout, stderr) => {

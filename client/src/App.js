@@ -5,7 +5,7 @@ import { capitalize, lowerCase, map, omitBy } from 'lodash';
 import logo from './logo.svg';
 import './App.css';
 
-const roomSrc = 'https://www.webrtc-experiment.com/screen/?s=wa41olr6o4';
+const roomSrc = 'https://www.webrtc-experiment.com/screen/?s=f4cwo9lmowp';
 
 const Container = styled.div`
   height: 100%;
@@ -83,19 +83,29 @@ const defaultState = {
   pressed: {
     a: false,
     b: false,
+    x: false,
+    y: false,
     arrowup: false,
     arrowdown: false,
     arrowleft: false,
     arrowright: false,
+    z: false,
+    l: false,
+    r: false,
     enter: false,
   },
   keyMappings: {
     a: 'a',
     b: 'b',
+    x: 'x',
+    y: 'y',
     arrowup: 'arrowup',
     arrowdown: 'arrowdown',
     arrowleft: 'arrowleft',
     arrowright: 'arrowright',
+    z: 'z',
+    l: 'l',
+    r: 'r',
     enter: 'enter'
   },
   toAssign: null,
