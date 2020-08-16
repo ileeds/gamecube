@@ -130,7 +130,7 @@ app.post('/api/input', (req, res) => {
         console.log(`stderr: ${stderr}`);
         return;
       }
-      console.log(action);
+      console.log(action, player);
     });
 
     res.send(

@@ -6,7 +6,7 @@ import { capitalize, lowerCase, map, omitBy } from 'lodash';
 import logo from './logo.svg';
 import './App.css';
 
-const roomSrc = 'https://www.webrtc-experiment.com/screen/?s=20cdx7x0ati';
+const roomSrc = 'https://www.webrtc-experiment.com/screen/?s=8hzap5374s';
 
 const Container = styled.div`
   height: 100%;
