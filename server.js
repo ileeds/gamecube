@@ -18,19 +18,52 @@ const players = {
 const stick = {
   x: 0.5,
   y: 0.5,
-}
+};
 
 const playerSticks = {
   1: { ...stick },
   2: { ...stick },
   3: { ...stick },
-}
+};
 
 const getStickAction = (stick) => {
   return `SET MAIN ${stick.x} ${stick.y}`;
-}
+};
 
 const path = '/Users/ianleeds/Library/Application Support/Dolphin/Pipes/pipe'.replace(/ /g, '\\ ');
+
+setInterval(() => {
+  _.forEach(players, (date, key) => {
+    if (date) {
+      const pingDiff = (new Date().getTime() - date.getTime()) / 1000;
+      if (pingDiff > 10) {
+        players[key] = false;
+        resetPlayer(key);
+      }
+    }
+  });
+}, 5000);
+
+const resetPlayer = (player) => {
+  playerSticks[player] = { ...stick };
+  const action = getStickAction(playerSticks[player]);
+  exec(`echo '${action}' > ${path}${player}`, (error, _stdout, stderr) => {
+    if (error) {
+      console.log(`error: ${error.message}`);
+      return;
+    }
+    if (stderr) {
+      console.log(`stderr: ${stderr}`);
+      return;
+    }
+  });
+};
+
+app.post('/api/ping', (req, res) => {
+  const { player } = req.body;
+  players[player] = new Date();
+  res.send({ message: 'pong' });
+});
 
 app.get('/api/players', (req, res) => {
   res.send({ players });
@@ -40,7 +73,7 @@ app.post('/api/register', (req, res) => {
   const { player } = req.body;
   let success = false;
   if (!players[player]) {
-    players[player] = true;
+    players[player] = new Date();
     success = true;
   }
   res.send({ players, success });
@@ -121,7 +154,7 @@ app.post('/api/input', (req, res) => {
   })(key, press, playerSticks[player], axisValue);
 
   if (action) {
-    exec(`echo '${action}' > ${path}${player}`, (error, stdout, stderr) => {
+    exec(`echo '${action}' > ${path}${player}`, (error, _stdout, stderr) => {
       if (error) {
         console.log(`error: ${error.message}`);
         return;
@@ -130,8 +163,9 @@ app.post('/api/input', (req, res) => {
         console.log(`stderr: ${stderr}`);
         return;
       }
-      console.log(action, player);
     });
+
+    console.log(action, player);
 
     res.send(
       `${key}, ${press}, ${player}`,

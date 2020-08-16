@@ -6,7 +6,7 @@ import { capitalize, lowerCase, map, omitBy } from 'lodash';
 import logo from './logo.svg';
 import './App.css';
 
-const roomSrc = 'https://www.webrtc-experiment.com/screen/?s=8hzap5374s';
+const roomSrc = 'https://www.webrtc-experiment.com/screen/?s=d25acd53-7448-4bb5-b983-7ad6c6919829';
 
 const Container = styled.div`
   height: 100%;
@@ -86,7 +86,6 @@ const ButtonText = styled.span`
 const defaultState = {
   players: null,
   myPlayer: null,
-  responseToPost: '',
   pressed: {
     a: false,
     b: false,
@@ -129,6 +128,7 @@ class App extends Component {
     document.addEventListener('keyup', this.handleKeyUp);
 
     window.addEventListener('beforeunload', this.handleLeave);
+    window.setInterval(this.ping, 1000);
   }
 
   getPlayers = async () => {
@@ -139,6 +139,20 @@ class App extends Component {
     return body;
   };
 
+  ping = () => {
+    if (this.state.myPlayer) {
+      fetch('/api/ping', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          player: this.state.myPlayer,
+        }),
+      });
+    }
+  }
+
   connectHandler = () => {
     this.setState({ gamepad: true });
   }
@@ -147,7 +161,7 @@ class App extends Component {
     this.setState({ gamepad: false });
   }
  
-  buttonChangeHandler = async (buttonName, down) => {
+  buttonChangeHandler = (buttonName, down) => {
     const key = (name => {
       switch(name) {
         case 'B':
@@ -169,13 +183,13 @@ class App extends Component {
       }
     })(buttonName);
     if (down) {
-      await this.onKeyDown(key);
+      this.onKeyDown(key);
     } else {
-      await this.onKeyUp(key);
+      this.onKeyUp(key);
     }
   }
  
-  axisChangeHandler = async (axisName, value, previousValue) => {
+  axisChangeHandler = (axisName, value, previousValue) => {
     const key = ((name, val, prev) => {
       switch(name) {
         case 'LeftStickX':
@@ -196,10 +210,10 @@ class App extends Component {
           return name;
       }
     })(axisName, value, previousValue);
-    value === 0 ? await this.onKeyUp(key) : await this.onKeyDown(key, value);
+    value === 0 ? this.onKeyUp(key) : this.onKeyDown(key, value);
   }
 
-  onKeyDown = async (keyInput, axisValue = null) => {
+  onKeyDown = (keyInput, axisValue = null) => {
     const key = lowerCase(keyInput).replace(/\s/g, '');
     if (this.state.toAssign && !(key in this.state.keyMappings)) {
       const newKeyMappings = omitBy(this.state.keyMappings, val => {
@@ -226,7 +240,7 @@ class App extends Component {
           }
         });
 
-        const response = await fetch('/api/input', {
+        fetch('/api/input', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -236,16 +250,13 @@ class App extends Component {
             press: true,
             player: this.state.myPlayer,
             axisValue: axisValue,
-          })
+          }),
         });
-        const body = await response.text();
-
-        this.setState({ responseToPost: body });
       }
     }
   }
 
-  onKeyUp = async (keyInput) => {
+  onKeyUp = keyInput => {
     const key = lowerCase(keyInput).replace(/\s/g, '');
     if (key in this.state.keyMappings) {
       const triggered = this.state.keyMappings[key];
@@ -257,7 +268,7 @@ class App extends Component {
         }
       });
 
-      const response = await fetch('/api/input', {
+      fetch('/api/input', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -266,36 +277,33 @@ class App extends Component {
           key: triggered,
           press: false,
           player: this.state.myPlayer,
-        })
+        }),
       });
-      const body = await response.text();
-
-      this.setState({ responseToPost: body });
     }
   }
 
-  handleKeyDown = async e => {
+  handleKeyDown = e => {
     if([32, 37, 38, 39, 40].indexOf(e.keyCode) > -1) {
       e.preventDefault();
     }
     
-    await this.onKeyDown(e.key);
+    this.onKeyDown(e.key);
   };
 
-  handleKeyUp = async e => {
-    await this.onKeyUp(e.key);
+  handleKeyUp = e => {
+    this.onKeyUp(e.key);
   };
 
-  handleLeave = async e => {
+  handleLeave = e => {
     if (this.state.myPlayer) {
-      await fetch('/api/leave', {
+      fetch('/api/leave', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
           player: this.state.myPlayer,
-        })
+        }),
       });
       this.setState({ ...defaultState });
       this.getPlayers().then(res => this.setState({ players: res.players }));
@@ -376,7 +384,7 @@ class App extends Component {
         return (
           <PlayerBlock
             key={key}
-            selected={val}
+            selected={!!val}
             onClick={() => this.selectPlayer(key)}
           >
             <ButtonText>{`Player ${parseInt(key) + 1}`}</ButtonText>
